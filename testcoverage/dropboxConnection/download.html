@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * Download a file and it's metadata
+ * The object returned will contain the file name, MIME type, metadata 
+ * (obtained from x-dropbox-metadata HTTP header) and file contents
+ * @link https://www.dropbox.com/developers/reference/api#files-GET
+ * @link https://github.com/BenTheDesigner/Dropbox/blob/master/Dropbox/API.php#L129-168
+ */
+
+// Require the bootstrap
+require_once('bootstrap.php');
+
+$phpCoverageFolder = "";
+
+$metaData = $dropbox->metaData();
+
+foreach($metaData['body']->contents as $folder){
+        $folderName = str_replace("/", "", $folder->path);
+        //echo "Found ".$folderName.PHP_EOL;
+
+        $outFile = $phpCoverageFolder.$folderName;
+        $outFolder = str_replace(".zip", "", $outFile);
+        // Download the file
+        if (!file_exists($outFolder)) {
+                echo "Downloading ".$folderName." to ".$outFile.PHP_EOL;
+                $file = $dropbox->getFile($folderName, $outFile);
+                //var_dump($file);
+                $zip = new ZipArchive;
+                $res = $zip->open($phpCoverageFolder.$folderName);
+                if ($res === TRUE) {
+                        $zip->extractTo($phpCoverageFolder);
+                        $zip->close();
+                        unlink($phpCoverageFolder.$folderName);
+                } else {
+                        echo "Doh! I couldn't open $folderName";
+                        unlink($phpCoverageFolder.$folderName);
+                }
+        }
+
+}
+echo "<p id=\"done\">Done with downloading zip archives.</p>";
